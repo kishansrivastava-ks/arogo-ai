@@ -33,17 +33,19 @@ const PatientAppointments = () => {
   const handleCancelClick = (appointment) => {
     setSelectedAppointment(appointment);
     setShowModal(true);
-    console.log(selectedAppointment);
+    // console.log(selectedAppointment);
   };
 
   const confirmCancellation = async () => {
     try {
       await API.post(`/appointments/cancel`, {
-        data: { appointmentId: selectedAppointment._id },
+        appointmentId: selectedAppointment._id,
       });
 
       setAppointments(
-        appointments.filter((a) => a._id !== selectedAppointment._id)
+        appointments.map((a) =>
+          a._id === selectedAppointment._id ? { ...a, status: "cancelled" } : a
+        )
       );
     } catch (error) {
       console.error("Error canceling appointment", error);
@@ -79,6 +81,7 @@ const PatientAppointments = () => {
                   y: -5,
                   boxShadow: "0px 10px 20px rgba(0, 0, 0, 0.1)",
                 }}
+                cancelled={appointment.status === "cancelled"}
               >
                 <DoctorInfo>
                   <DoctorName>
@@ -103,13 +106,20 @@ const PatientAppointments = () => {
                     <span>{`${appointment?.time} on ${appointment?.date}`}</span>
                   </AppointmentTime>
 
-                  <CancelButton
-                    onClick={() => handleCancelClick(appointment)}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <FiTrash2 /> Cancel
-                  </CancelButton>
+                  {appointment.status !== "cancelled" && (
+                    <CancelButton
+                      onClick={() => handleCancelClick(appointment)}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <FiTrash2 /> Cancel
+                    </CancelButton>
+                  )}
+                  <StatusBadge status={appointment.status}>
+                    {appointment.status === "cancelled"
+                      ? "Cancelled"
+                      : "Booked"}
+                  </StatusBadge>
                 </SlotInfo>
               </AppointmentCard>
             ))}
@@ -171,6 +181,18 @@ const PatientAppointments = () => {
 
 export default PatientAppointments;
 
+const StatusBadge = styled.span`
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  background-color: ${(props) =>
+    props.status === "cancelled" ? "#f3f4f6" : "#ebf8ff"};
+  color: ${(props) => (props.status === "cancelled" ? "#9ca3af" : "#3182ce")};
+  border: 1px solid
+    ${(props) => (props.status === "cancelled" ? "#e5e7eb" : "#bee3f8")};
+`;
+
 const Container = styled(motion.div)`
   padding: 2.5rem;
   width: 85%;
@@ -206,8 +228,9 @@ const AppointmentCard = styled(motion.div)`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-left: 4px solid #3182ce;
+  border-left: 4px solid ${(props) => (props.cancelled ? "#cbd5e0" : "#3182ce")};
   transition: all 0.3s ease;
+  opacity: ${(props) => (props.cancelled ? 0.6 : 1)};
 `;
 
 const DoctorInfo = styled.div`

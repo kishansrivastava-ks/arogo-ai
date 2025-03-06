@@ -5,6 +5,9 @@ import styled from "styled-components";
 import { motion } from "framer-motion";
 import API from "../services/api";
 import AuthContext from "../context/AuthContext";
+// import { toast } from "react-toastify";
+// import "react-toastify/dist/ReactToastify.css";
+import Toast from "../components/Toast";
 
 const BookAppointment = () => {
   const { id } = useParams();
@@ -14,6 +17,7 @@ const BookAppointment = () => {
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
+  const [bookingLoading, setBookingLoading] = useState(false);
 
   useEffect(() => {
     const fetchDoctorDetails = async () => {
@@ -29,23 +33,52 @@ const BookAppointment = () => {
     fetchDoctorDetails();
   }, [id]);
 
+  // const handleConfirmBooking = async () => {
+  //   if (!selectedDate || !selectedTime) {
+  //     alert("Please select a date and time slot.");
+  //     return;
+  //   }
+
+  //   try {
+  //     await API.post("/appointments/book", {
+  //       doctorId: id,
+  //       date: selectedDate,
+  //       time: selectedTime,
+  //     });
+  //     alert("Appointment booked successfully!");
+  //     navigate("/dashboard/patient/appointments");
+  //   } catch (error) {
+  //     alert("Error booking appointment.");
+  //     console.error(error);
+  //   }
+  // };
+
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) {
       alert("Please select a date and time slot.");
       return;
     }
 
+    setBookingLoading(true);
+
     try {
-      await API.post("/appointments/book", {
+      const response = await API.post("/appointments/book", {
         doctorId: id,
         date: selectedDate,
         time: selectedTime,
       });
-      alert("Appointment booked successfully!");
-      navigate("/dashboard/patient/appointments");
+
+      if (response.status === 201) {
+        // Toast.success("Appointment booked successfully!");
+        alert("Appointment booked successfully!");
+        navigate("/dashboard/patient/appointments");
+      }
     } catch (error) {
+      // Toast.error("Failed to book appointment. Try again.");
       alert("Error booking appointment.");
-      console.error(error);
+      console.error("Booking error:", error);
+    } finally {
+      setBookingLoading(false);
     }
   };
 
@@ -128,11 +161,11 @@ const BookAppointment = () => {
 
         <ConfirmButton
           onClick={handleConfirmBooking}
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          disabled={!selectedDate || !selectedTime}
+          whileHover={!bookingLoading ? { scale: 1.02 } : {}}
+          whileTap={!bookingLoading ? { scale: 0.98 } : {}}
+          disabled={bookingLoading || !selectedDate || !selectedTime}
         >
-          Confirm Booking
+          {bookingLoading ? "Booking..." : "Confirm Booking"}
         </ConfirmButton>
 
         <CancelButton

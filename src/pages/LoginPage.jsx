@@ -63,6 +63,12 @@ const StyledButton = styled(motion.button)`
   }
 `;
 
+const LoadingButton = styled(StyledButton)`
+  background: #7c3aed;
+  cursor: not-allowed;
+  opacity: 0.7;
+`;
+
 const ErrorText = styled(motion.p)`
   color: #e53e3e;
   font-size: 0.85rem;
@@ -86,7 +92,6 @@ const SignUpText = styled.p`
   }
 `;
 
-// Customized InputField wrapper
 const InputWrapper = styled.div`
   margin-bottom: 0.5rem;
 `;
@@ -98,15 +103,34 @@ const LoginPage = () => {
     formState: { errors },
   } = useForm();
   const [errorMessage, setErrorMessage] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const onSubmit = async (data) => {
+    setLoading(true);
+    setErrorMessage("");
+
     try {
       const response = await API.post("/auth/login", data);
       localStorage.setItem("token", response.data.token);
-      navigate("/dashboard/patient");
+
+      // Fetch user details to determine role
+      const userResponse = await API.get("/auth/me", {
+        headers: { Authorization: `Bearer ${response.data.token}` },
+      });
+
+      const userRole = userResponse.data.data.role;
+      if (userRole === "patient") {
+        navigate("/dashboard/patient");
+      } else if (userRole === "doctor") {
+        navigate("/dashboard/doctor");
+      } else {
+        navigate("/"); // Default to home if role is unclear
+      }
     } catch (error) {
       setErrorMessage("Invalid email or password.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -116,10 +140,7 @@ const LoginPage = () => {
     visible: {
       opacity: 1,
       y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut",
-      },
+      transition: { duration: 0.6, ease: "easeOut" },
     },
   };
 
@@ -128,16 +149,14 @@ const LoginPage = () => {
     visible: {
       opacity: 1,
       height: "auto",
-      transition: {
-        duration: 0.3,
-      },
+      transition: { duration: 0.3 },
     },
   };
 
   return (
     <Container>
       <LoginBox initial="hidden" animate="visible" variants={containerVariants}>
-        <h2>Welcome back</h2>
+        <h2>Welcome</h2>
         <form onSubmit={handleSubmit(onSubmit)}>
           <InputWrapper>
             <InputField
@@ -183,16 +202,21 @@ const LoginPage = () => {
             </ErrorText>
           )}
 
-          <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
-            <StyledButton
-              type="submit"
-              whileHover={{ scale: 1.01 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              Log in
-            </StyledButton>
-          </motion.div>
+          {loading ? (
+            <LoadingButton disabled>Logging in...</LoadingButton>
+          ) : (
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+              <StyledButton
+                type="submit"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Log in
+              </StyledButton>
+            </motion.div>
+          )}
         </form>
+
         <SignUpText>
           Don't have an account? <Link to="/register">Sign Up</Link>
         </SignUpText>
