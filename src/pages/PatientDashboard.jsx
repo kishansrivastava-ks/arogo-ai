@@ -1,17 +1,21 @@
-import { useContext } from "react";
+// import { useContext } from "react";
 import styled from "styled-components";
-import AuthContext from "../context/AuthContext";
+import AuthContext, { useAuth } from "../context/AuthContext";
 import { motion } from "framer-motion";
 
 const PatientDashboard = () => {
-  const { user } = useContext(AuthContext);
+  const { user, isLoading } = useAuth();
   console.log(user);
 
+  if (isLoading) {
+    return <p>Loading...</p>; // Replace this with a proper loader component
+  }
   return (
     <DashboardContainer
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: "easeOut" }}
+      key={user?.email || "default"}
     >
       <GradientCard>
         <ProfileHeader>

@@ -4,11 +4,11 @@ import { useForm } from "react-hook-form";
 import { Link, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { motion } from "framer-motion";
-import Button from "../components/Button";
-import InputField from "../components/InputField";
-import API from "../services/api";
-import { useAuth } from "../context/AuthContext";
+import Button from "../../components/Button";
+import InputField from "../../components/InputField";
+import API from "../../services/api";
 
+// Styled components with modern design
 const Container = styled.div`
   display: flex;
   justify-content: center;
@@ -102,10 +102,8 @@ const LoginPage = () => {
     handleSubmit,
     formState: { errors },
   } = useForm();
-  const { login } = useAuth(); // Get login function from context
   const [errorMessage, setErrorMessage] = useState("");
   const [loading, setLoading] = useState(false);
-
   const navigate = useNavigate();
 
   const onSubmit = async (data) => {
@@ -114,28 +112,20 @@ const LoginPage = () => {
 
     try {
       const response = await API.post("/auth/login", data);
-      const token = response.data.token;
-      localStorage.setItem("token", token);
+      localStorage.setItem("token", response.data.token);
 
-      try {
-        const userResponse = await API.get("/auth/me", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+      // Fetch user details to determine role
+      const userResponse = await API.get("/auth/me", {
+        headers: { Authorization: `Bearer ${response.data.token}` },
+      });
 
-        const userRole = userResponse.data.data.role;
-
-        // Redirect based on role
-        if (userRole === "doctor") {
-          await login(token); // Set user in context
-          navigate("/dashboard/doctor");
-        } else if (userRole === "patient") {
-          await login(token); // Set user in context
-          navigate("/dashboard/patient");
-        } else {
-          setErrorMessage("Invalid user role. Please contact support.");
-        }
-      } catch (error) {
-        setErrorMessage("Error fetching user details.");
+      const userRole = userResponse.data.data.role;
+      if (userRole === "patient") {
+        navigate("/dashboard/patient");
+      } else if (userRole === "doctor") {
+        navigate("/dashboard/doctor");
+      } else {
+        navigate("/"); // Default to home if role is unclear
       }
     } catch (error) {
       setErrorMessage("Invalid email or password.");
@@ -144,9 +134,28 @@ const LoginPage = () => {
     }
   };
 
+  // Animation variants
+  const containerVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: { duration: 0.6, ease: "easeOut" },
+    },
+  };
+
+  const errorVariants = {
+    hidden: { opacity: 0, height: 0 },
+    visible: {
+      opacity: 1,
+      height: "auto",
+      transition: { duration: 0.3 },
+    },
+  };
+
   return (
     <Container>
-      <LoginBox initial="hidden" animate="visible">
+      <LoginBox initial="hidden" animate="visible" variants={containerVariants}>
         <h2>Welcome</h2>
         <form onSubmit={handleSubmit(onSubmit)}>
           <InputWrapper>
@@ -155,7 +164,15 @@ const LoginPage = () => {
               type="email"
               {...register("email", { required: true })}
             />
-            {errors.email && <ErrorText>Email is required</ErrorText>}
+            {errors.email && (
+              <ErrorText
+                initial="hidden"
+                animate="visible"
+                variants={errorVariants}
+              >
+                Email is required
+              </ErrorText>
+            )}
           </InputWrapper>
 
           <InputWrapper>
@@ -164,15 +181,39 @@ const LoginPage = () => {
               type="password"
               {...register("password", { required: true })}
             />
-            {errors.password && <ErrorText>Password is required</ErrorText>}
+            {errors.password && (
+              <ErrorText
+                initial="hidden"
+                animate="visible"
+                variants={errorVariants}
+              >
+                Password is required
+              </ErrorText>
+            )}
           </InputWrapper>
 
-          {errorMessage && <ErrorText>{errorMessage}</ErrorText>}
+          {errorMessage && (
+            <ErrorText
+              initial="hidden"
+              animate="visible"
+              variants={errorVariants}
+            >
+              {errorMessage}
+            </ErrorText>
+          )}
 
           {loading ? (
             <LoadingButton disabled>Logging in...</LoadingButton>
           ) : (
-            <StyledButton type="submit">Log in</StyledButton>
+            <motion.div whileHover={{ scale: 1.01 }} whileTap={{ scale: 0.98 }}>
+              <StyledButton
+                type="submit"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Log in
+              </StyledButton>
+            </motion.div>
           )}
         </form>
 

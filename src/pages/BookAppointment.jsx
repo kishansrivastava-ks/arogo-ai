@@ -5,9 +5,9 @@ import styled from "styled-components";
 import { motion } from "framer-motion";
 import API from "../services/api";
 import AuthContext from "../context/AuthContext";
-// import { toast } from "react-toastify";
-// import "react-toastify/dist/ReactToastify.css";
+import { useAuth } from "../context/AuthContext";
 import Toast from "../components/Toast";
+import { useQueryClient } from "@tanstack/react-query";
 
 const BookAppointment = () => {
   const { id } = useParams();
@@ -16,8 +16,10 @@ const BookAppointment = () => {
   const [selectedTime, setSelectedTime] = useState("");
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [bookingLoading, setBookingLoading] = useState(false);
+
+  const queryClient = useQueryClient();
 
   useEffect(() => {
     const fetchDoctorDetails = async () => {
@@ -33,29 +35,9 @@ const BookAppointment = () => {
     fetchDoctorDetails();
   }, [id]);
 
-  // const handleConfirmBooking = async () => {
-  //   if (!selectedDate || !selectedTime) {
-  //     alert("Please select a date and time slot.");
-  //     return;
-  //   }
-
-  //   try {
-  //     await API.post("/appointments/book", {
-  //       doctorId: id,
-  //       date: selectedDate,
-  //       time: selectedTime,
-  //     });
-  //     alert("Appointment booked successfully!");
-  //     navigate("/dashboard/patient/appointments");
-  //   } catch (error) {
-  //     alert("Error booking appointment.");
-  //     console.error(error);
-  //   }
-  // };
-
   const handleConfirmBooking = async () => {
     if (!selectedDate || !selectedTime) {
-      alert("Please select a date and time slot.");
+      <Toast message="Please select a date and time slot!" type="error" />;
       return;
     }
 
@@ -69,8 +51,9 @@ const BookAppointment = () => {
       });
 
       if (response.status === 201) {
-        // Toast.success("Appointment booked successfully!");
-        alert("Appointment booked successfully!");
+        <Toast message="Appointment booked successfully!" />;
+        // alert("Appointment booked successfully!");
+        queryClient.invalidateQueries(["appointments"]);
         navigate("/dashboard/patient/appointments");
       }
     } catch (error) {
@@ -82,7 +65,7 @@ const BookAppointment = () => {
     }
   };
 
-  if (loading)
+  if (isAuthLoading || loading)
     return (
       <LoadingContainer>
         <Spinner />

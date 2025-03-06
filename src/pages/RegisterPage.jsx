@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { useNavigate } from "react-router-dom";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuth } from "../context/AuthContext";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
 import Button from "../components/Button";
@@ -143,7 +145,43 @@ const RegisterPage = () => {
   const [toastMessage, setToastMessage] = useState("");
   const navigate = useNavigate();
 
-  const role = watch("role", "patient"); // Watch the role selection
+  const role = watch("role", "patient");
+  const queryClient = useQueryClient();
+  const { login } = useAuth();
+
+  // const onSubmit = async (data) => {
+  //   try {
+  //     const requestData = {
+  //       name: data.name,
+  //       email: data.email,
+  //       password: data.password,
+  //       role: data.role,
+  //     };
+
+  //     if (data.role === "doctor") {
+  //       requestData.specialty = data.specialty;
+  //       requestData.experience = parseInt(data.experience, 10);
+  //       requestData.location = {
+  //         city: data.city,
+  //         state: data.state,
+  //       };
+  //     }
+
+  //     const response = await API.post("/auth/register", requestData);
+  //     localStorage.setItem("token", response.data.token);
+
+  //     // Redirect based on role
+  //     if (data.role === "doctor") {
+  //       navigate("/dashboard/doctor");
+  //     } else {
+  //       navigate("/dashboard/patient");
+  //     }
+  //   } catch (error) {
+  //     setToastMessage("Registration failed. Try again.");
+  //   }
+  // };
+
+  // Animation variants
 
   const onSubmit = async (data) => {
     try {
@@ -164,7 +202,12 @@ const RegisterPage = () => {
       }
 
       const response = await API.post("/auth/register", requestData);
-      localStorage.setItem("token", response.data.token);
+      const token = response.data.token;
+      localStorage.setItem("token", token);
+
+      // Immediately set user in AuthContext & invalidate user cache
+      await login(token);
+      queryClient.invalidateQueries(["user"]);
 
       // Redirect based on role
       if (data.role === "doctor") {
@@ -177,7 +220,6 @@ const RegisterPage = () => {
     }
   };
 
-  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {

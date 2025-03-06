@@ -2,33 +2,34 @@
 import { useContext, useEffect, useState } from "react";
 import styled from "styled-components";
 import { motion, AnimatePresence } from "framer-motion";
-import API from "../services/api";
-import AuthContext, { useAuth } from "../context/AuthContext";
-import Loader from "../components/Loader";
-import Modal from "../components/Modal";
+import API from "../../services/api";
+import AuthContext from "../../context/AuthContext";
+import Loader from "../../components/Loader";
+import Modal from "../../components/Modal";
 import { FiTrash2, FiCalendar, FiMapPin, FiUser } from "react-icons/fi";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 const PatientAppointments = () => {
-  const { user, isLoading: isAuthLoading } = useAuth();
-  const queryClient = useQueryClient();
-
-  // const [appointments, setAppointments] = useState([]);
-  // const [loading, setLoading] = useState(true);
-
+  const { user } = useContext(AuthContext);
+  const [appointments, setAppointments] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState(null);
 
-  const { data: appointments, isLoading } = useQuery({
-    queryKey: ["appointments", user?._id],
-    queryFn: async () => {
-      const { data } = await API.get(`/appointments/patient`);
-      return data.data;
-    },
-    staleTime: 1000 * 60 * 5, // Cache for 5 minutes
-  });
+  useEffect(() => {
+    fetchAppointments();
+  }, []);
 
-  
+  const fetchAppointments = async () => {
+    try {
+      const { data } = await API.get(`/appointments/patient`);
+      setAppointments(data.data);
+    } catch (error) {
+      console.error("Error fetching appointments", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleCancelClick = (appointment) => {
     setSelectedAppointment(appointment);
     setShowModal(true);
@@ -41,14 +42,18 @@ const PatientAppointments = () => {
         appointmentId: selectedAppointment._id,
       });
 
-      queryClient.invalidateQueries(["appointments"]);
+      setAppointments(
+        appointments.map((a) =>
+          a._id === selectedAppointment._id ? { ...a, status: "cancelled" } : a
+        )
+      );
     } catch (error) {
       console.error("Error canceling appointment", error);
     }
     setShowModal(false);
   };
 
-  if (isAuthLoading || isLoading) return <Loader />;
+  if (loading) return <Loader />;
 
   return (
     <Container

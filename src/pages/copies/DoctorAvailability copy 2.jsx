@@ -1,9 +1,9 @@
 /* eslint-disable no-unused-vars */
 import { useContext, useEffect, useState } from "react";
 import styled from "styled-components";
-import API from "../services/api";
-import AuthContext from "../context/AuthContext";
-import Toast from "../components/Toast";
+import API from "../../services/api";
+import AuthContext from "../../context/AuthContext";
+import Toast from "../../components/Toast";
 import { FiTrash2 } from "react-icons/fi";
 
 const DoctorAvailability = () => {
