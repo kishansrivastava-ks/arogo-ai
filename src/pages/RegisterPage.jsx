@@ -238,8 +238,18 @@ const RegisterPage = () => {
         API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
 
         // Proceed with login and redirection
-        await login(token);
-        queryClient.invalidateQueries(["user"]);
+
+        // 🔴 Check
+        try {
+          // Call login with the token
+          await login(token);
+          queryClient.invalidateQueries(["user"]);
+        } catch (error) {
+          console.error("Error during login after registration:", error);
+          setToastMessage(
+            "Account created but login failed. Please log in manually."
+          );
+        }
 
         // Redirect based on role
         if (data.role === "doctor") {

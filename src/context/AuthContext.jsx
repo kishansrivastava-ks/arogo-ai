@@ -30,11 +30,26 @@ export const AuthProvider = ({ children }) => {
 
   // Login function
   const login = async (token) => {
+    // Set token in localStorage
     localStorage.setItem("token", token);
-    await refetch(); // Re-fetch user data immediately
-    navigate(
-      user?.role === "doctor" ? "/dashboard/doctor" : "/dashboard/patient"
-    );
+
+    // Set the authorization header for future requests
+    API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+    // Re-fetch user data with the new token
+    await refetch();
+
+    // Check if user data was successfully fetched
+    if (user) {
+      // Navigate based on role
+      navigate(
+        user.role === "doctor" ? "/dashboard/doctor" : "/dashboard/patient"
+      );
+    } else {
+      // Handle case where user data couldn't be fetched
+      console.error("User data not available after login");
+      // You might want to show an error or redirect to login
+    }
   };
 
   // Logout function
