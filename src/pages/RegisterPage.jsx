@@ -167,8 +167,23 @@ const RegisterPage = () => {
   //       };
   //     }
 
+  //     // 🔴 check
+  //     console.log("Sending registration data:", requestData);
+
   //     const response = await API.post("/auth/register", requestData);
-  //     localStorage.setItem("token", response.data.token);
+
+  //     // 🔴 check
+  //     console.log("Registration response:", response);
+
+  //     const token = response.data.token;
+  //     localStorage.setItem("token", token);
+  //     console.log(token);
+
+  //     API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+  //     // Immediately set user in AuthContext & invalidate user cache
+  //     await login(token);
+  //     queryClient.invalidateQueries(["user"]);
 
   //     // Redirect based on role
   //     if (data.role === "doctor") {
@@ -180,8 +195,6 @@ const RegisterPage = () => {
   //     setToastMessage("Registration failed. Try again.");
   //   }
   // };
-
-  // Animation variants
 
   const onSubmit = async (data) => {
     try {
@@ -201,21 +214,47 @@ const RegisterPage = () => {
         };
       }
 
+      // Log the request data to verify what's being sent
+      console.log("Sending registration data:", requestData);
+
       const response = await API.post("/auth/register", requestData);
-      const token = response.data.token;
-      localStorage.setItem("token", token);
 
-      // Immediately set user in AuthContext & invalidate user cache
-      await login(token);
-      queryClient.invalidateQueries(["user"]);
+      // Log the entire response to see its structure
+      console.log("Registration response:", response);
 
-      // Redirect based on role
-      if (data.role === "doctor") {
-        navigate("/dashboard/doctor");
+      // Check if token exists in the expected location
+      if (response.data && response.data.token) {
+        const token = response.data.token;
+
+        // Log the token to verify it's not undefined
+        console.log("Token received:", token);
+
+        localStorage.setItem("token", token);
+
+        // Verify token was properly set in localStorage
+        console.log("Token in localStorage:", localStorage.getItem("token"));
+
+        // Make sure authorization header is set
+        API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+
+        // Proceed with login and redirection
+        await login(token);
+        queryClient.invalidateQueries(["user"]);
+
+        // Redirect based on role
+        if (data.role === "doctor") {
+          navigate("/dashboard/doctor");
+        } else {
+          navigate("/dashboard/patient");
+        }
       } else {
-        navigate("/dashboard/patient");
+        console.error("No token in response:", response.data);
+        setToastMessage(
+          "Registration successful but login failed. Please log in manually."
+        );
       }
     } catch (error) {
+      console.error("Registration error:", error);
       setToastMessage("Registration failed. Try again.");
     }
   };
